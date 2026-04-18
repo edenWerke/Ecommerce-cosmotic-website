@@ -1,27 +1,27 @@
 const Order = require("../models/Order");
-const Product = require("../models/Product");
+const Cart = require("../models/Cart");
 
+// CREATE ORDER (CHECKOUT)
 const createOrder = async (req, res) => {
   try {
-    const { items } = req.body;
+    const userId = req.user.id;
 
-    let totalPrice = 0;
+    const cart = await Cart.findOne({ userId });
 
-    // calculate real price from DB
-    for (let item of items) {
-      const product = await Product.findById(item.productId);
-
-      if (!product) {
-        return res.status(404).json({ message: "Product not found" });
-      }
-
-      totalPrice += product.price * item.quantity;
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ message: "Cart is empty" });
     }
 
     const order = await Order.create({
-      items,
-      totalPrice
+      userId,
+      items: cart.items,
+      totalPrice: cart.totalPrice
     });
+
+    // clear cart after order
+    cart.items = [];
+    cart.totalPrice = 0;
+    await cart.save();
 
     res.status(201).json(order);
 
@@ -30,13 +30,21 @@ const createOrder = async (req, res) => {
   }
 };
 
-const getOrders = async (req, res) => {
+// GET USER ORDERS
+const getUserOrders = async (req, res) => {
   try {
-    const orders = await Order.find().populate("items.productId");
+    const userId = req.user.id;
+
+    const orders = await Order.find({ userId }).populate("items.productId");
+
     res.json(orders);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-module.exports = { createOrder, getOrders };
+module.exports = {
+  createOrder,
+  getUserOrders
+};

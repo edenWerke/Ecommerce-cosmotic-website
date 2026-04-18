@@ -1,9 +1,10 @@
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 
-// ADD TO CART
+// ADD TO CART (USER SPECIFIC)
 const addToCart = async (req, res) => {
   try {
+    const userId = req.user.id;
     const { productId, quantity } = req.body;
 
     const product = await Product.findById(productId);
@@ -11,14 +12,12 @@ const addToCart = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    let cart = await Cart.findOne();
+    let cart = await Cart.findOne({ userId });
 
-    // if no cart exists, create one
     if (!cart) {
-      cart = new Cart({ items: [] });
+      cart = new Cart({ userId, items: [] });
     }
 
-    // check if product already in cart
     const existingItem = cart.items.find(
       item => item.productId.toString() === productId
     );
@@ -48,24 +47,17 @@ const addToCart = async (req, res) => {
   }
 };
 
-// GET CART
+// GET USER CART
 const getCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne().populate("items.productId");
+    const userId = req.user.id;
+
+    const cart = await Cart.findOne({ userId }).populate("items.productId");
+
     res.json(cart);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// CLEAR CART
-const clearCart = async (req, res) => {
-  try {
-    await Cart.deleteMany({});
-    res.json({ message: "Cart cleared" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-module.exports = { addToCart, getCart, clearCart };
+module.exports = { addToCart, getCart };

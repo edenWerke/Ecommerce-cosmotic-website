@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
     items: [
       {
         productId: {
@@ -11,12 +16,18 @@ const orderSchema = new mongoose.Schema(
         },
         quantity: {
           type: Number,
-          required: true,
-          default: 1
+          required: true
         }
       }
     ],
-    totalPrice: Number
+    totalPrice: {
+      type: Number,
+      required: true
+    },
+    status: {
+      type: String,
+      default: "pending" // pending | completed | cancelled
+    }
   },
   { timestamps: true }
 );
